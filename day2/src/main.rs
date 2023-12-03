@@ -6,14 +6,27 @@ fn main() {
     let mut data = String::new();
     let mut f = File::open("test_input.txt").expect("should read file");
     f.read_to_string(&mut data).expect("should read data");
-    let game_id_sum = data.split("\n").into_iter().fold(0, |acc, g| {
+    println!("{}", part_one(data.clone(), params));
+    println!("{}", part_two(data));
+}
+
+fn part_one(input: String, params: (i32, i32, i32)) -> i32 {
+    let game_id_sum = input.split("\n").into_iter().fold(0, |acc, g| {
         let game = Game::from(g.to_string());
         match game.is_valid(params.0, params.1, params.2) {
             true => game.id + acc,
             false => acc,
         }
     });
-    println!("{}", game_id_sum)
+    game_id_sum
+}
+
+fn part_two(input: String) -> i32 {
+   input.split("\n").into_iter().fold(0, |acc, g| {
+       let game = Game::from(g.to_string());
+       let power = game.power();
+       acc + power
+   })
 }
 
 // 12 red, 13 green, 14 blue
@@ -35,6 +48,21 @@ impl Game {
         }
         true
     }
+    fn power(&self) -> i32 {
+        let min_red = find_min(&self.rounds.iter().map(|r| r.red).collect());
+        let min_blue = find_min(&self.rounds.iter().map(|r| r.blue).collect());
+        let min_green = find_min(&self.rounds.iter().map(|r| r.green).collect());
+        min_red * min_blue * min_green
+    }
+}
+fn find_min(input: &Vec<i32>) -> i32 {
+    let mut min = input.get(0).unwrap_or(&-1);
+   for i in input {
+       if i > min {
+           min = i;
+       }
+   }
+    min.clone()
 }
 
 impl From<String> for Game {
