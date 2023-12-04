@@ -4,7 +4,7 @@ use std::io::Read;
 fn main() {
     let params = (12, 13, 14);
     let mut data = String::new();
-    let mut f = File::open("test_input.txt").expect("should read file");
+    let mut f = File::open("src/bin/day2/test_input.txt").expect("should read file");
     f.read_to_string(&mut data).expect("should read data");
     println!("{}", part_one(data.clone(), params));
     println!("{}", part_two(data));
@@ -41,12 +41,7 @@ struct Game {
 
 impl Game {
     fn is_valid(&self, red: i32, green: i32, blue: i32) -> bool {
-        for r in &self.rounds {
-            if !r.is_valid(red, green, blue) {
-                return false;
-            }
-        }
-        true
+        self.rounds.iter().all(|r| r.is_valid(red, green, blue))
     }
     fn power(&self) -> i32 {
         let min_red = find_min(&self.rounds.iter().map(|r| r.red).collect());

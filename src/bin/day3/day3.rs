@@ -3,7 +3,7 @@ use std::io::Read;
 
 fn main() {
     let mut data = String::new();
-    let mut f = File::open("input.txt").expect("should read file");
+    let mut f = File::open("src/bin/day3/input.txt").expect("should read file");
     f.read_to_string(&mut data).expect("should read data");
     println!("{:?}", part_one(data))
 }
@@ -11,26 +11,28 @@ fn main() {
 // Loop over every line again, and when I come across a number, see if there is a symbol nearby
 // How can we store that symbol? Map of i to j? So we can do a lookup for each line of symbols?
 
+// part two:
+// Identify any number's coordinates, then loop through searching for the *. If you find a star,
+// see if there are any number coordinates adjacent
+
 fn part_one(input: String) -> i32 {
-    let mut output = 0;
+    let mut output = Vec::new();
     let input = CustomMap::new(input);
     let mut current_number = String::new();
+    let mut adjacent = false;
+
     for (i, spec) in input.specs.iter().enumerate() {
         for (j, spec_val) in spec.iter().enumerate() {
             match spec_val {
                 Spec::Dot => {
                     // We are at a dot. Do we have any numbers? If so, is there a symbol adjacent to us?
-                    if current_number != "" {
-                        println!("looping: j: {}, len: {}", j, current_number.len());
-                        for index in j-current_number.len()..=j-1 {
-                            if has_adjacent((i, index), &input.symbols) {
-                                output += current_number.parse::<i32>().expect("didn't create the numbers properly");
-                                // Break out here regardless of where we are because we have added this number
-                                break
-                            }
-                        }
-                        current_number = String::new();
+                    if current_number != "" && adjacent {
+                        let num = current_number.parse::<i32>().expect("didn't create the numbers properly");
+                        println!("adding: {}", num);
+                        output.push(num);
                     }
+                    current_number = String::new();
+                    adjacent = false;
                 },
                 Spec::Number(n) => {
                     // Here we have a few cases.
@@ -38,37 +40,32 @@ fn part_one(input: String) -> i32 {
                     // 2. This is the middle number we've seen. Add it to the input
                     // 3. This is the last/only number we've seen.
                     current_number = format!("{}{}", current_number, n);
+                    if has_adjacent((i, j), &input.symbols) {
+                        adjacent = true;
+                    }
                 }
                 Spec::Symbol(_) => {
                     // We are at a symbol. Do we have any numbers? If so, combine them to our sum
                     if current_number!= "" {
-                        output += current_number.parse::<i32>().expect("didn't create the numbers properly");
+                        let num = current_number.parse::<i32>().expect("didn't create the numbers properly");
+                        println!("adding: {}", num);
+                        output.push(num);
                     }
                     current_number = String::new();
+                    adjacent = false;
                 }
             }
         }
     }
-    output
+    output.iter().sum()
 }
 
 fn has_adjacent(number: (usize, usize), symbols: &Vec<(usize, usize)>) -> bool {
-    let adjacent_differences = vec![(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1,1) ];
-
-    /*
-    (-1, -1), (-1, 0), (-1, +1)
-     (0, -1)     x,     (0, +1) don't need to check this
-     (+1, -1), (+1, 0), (+1, +1)
-     */
-
-    for s in symbols {
-        let coord_diff: (i32, i32) = ((number.0 as i32 - s.0 as i32), (number.1 as i32 - s.1 as i32));
-        if adjacent_differences.contains(&coord_diff) {
-            return true
-        }
-        let coord_diff: (i32, i32) = ((number.0 as i32 - s.0 as i32).abs(), (number.1 as i32 - s.1 as i32).abs());
-        if adjacent_differences.contains(&coord_diff) {
-            return true
+    for i in (number.0 as isize - 1)..=(number.0 as isize + 1) {
+        for j in (number.1 as isize - 1)..=(number.1 as isize + 1) {
+            if (i >= 0 && j >= 0) && symbols.contains(&(i as usize, j as usize)) {
+                return true;
+            }
         }
     }
     false
