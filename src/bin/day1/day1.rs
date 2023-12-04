@@ -3,13 +3,13 @@ use std::io::Read;
 
 fn main() {
     let mut data = String::new();
-    let mut f = File::open("input.txt").expect("should read file");
+    let mut f = File::open("src/bin/day1/input.txt").expect("should read file");
     f.read_to_string(&mut data).expect("should read data");
     let actual_in = data.split("\n").collect();
     println!("{}", part_one(actual_in));
 
     let mut data = String::new();
-    let mut f = File::open("input_2.txt").expect("should read file");
+    let mut f = File::open("src/bin/day1/input_2.txt").expect("should read file");
     f.read_to_string(&mut data).expect("should read data");
     let actual_in = data.split("\n").collect();
     println!("{}", part_one(actual_in))
