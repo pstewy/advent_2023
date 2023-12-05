@@ -5,7 +5,7 @@ fn main() {
     let mut data = String::new();
     let mut f = File::open("src/bin/day3/input.txt").expect("should read file");
     f.read_to_string(&mut data).expect("should read data");
-    println!("{:?}", part_one(data))
+    println!("{:?}", part_two(data))
 }
 // Loop over every line and store the coords (i,j) of the symbol
 // Loop over every line again, and when I come across a number, see if there is a symbol nearby
@@ -14,6 +14,68 @@ fn main() {
 // part two:
 // Identify any number's coordinates, then loop through searching for the *. If you find a star,
 // see if there are any number coordinates adjacent
+
+fn part_two(input: String) -> i32 {
+    let mut symbols: Vec<(i32, i32)> = Vec::new();
+    let mut numbers: Vec<Number> = Vec::new();
+    for (i, line) in input.split("\n").enumerate() {
+        let mut num = String::new();
+        for (j, c) in line.chars().enumerate() {
+            // Search for symbols, if its a star then keep it. Clear the num.
+            // Search for numbers. If you find one, add to the num
+            if let Some(d) = c.to_digit(10) {
+                num = format!("{}{}", num, d);
+                // We could be at the end of the line, if so, add the number.
+                if j == line.len()-1 {
+                    let start_j = j as i32 - num.len() as i32 +1;
+                    let end_j = j as i32;
+                    numbers.push(Number{
+                        value: num.parse().expect("should parse number"),
+                        coords: (i as i32, (start_j..end_j).into_iter().collect()),
+                    })
+                }
+            } else {
+                if c.to_string().eq("*") {
+                    symbols.push((i as i32, j as i32));
+                }
+                // We are at a symbol, see snag our number if we had one
+                if !num.eq("") {
+                    let start_j = j as i32 - num.len() as i32;
+                    let end_j = j as i32;
+                    numbers.push(Number{
+                        value: num.parse().expect("should parse number"),
+                        coords: (i as i32, (start_j..end_j).into_iter().collect()),
+                    })
+                }
+                num = "".to_string();
+            }
+        }
+    };
+
+    // Iterate through the symbols. Look for adjacent numbers
+    let mut output = 0;
+    for (i, s) in symbols.into_iter().enumerate() {
+        let adjacent_nums = find_adjacent(s, numbers.clone());
+        if adjacent_nums.len() == 2 {
+            let a =adjacent_nums[0].value;
+            let b =adjacent_nums[1].value;
+            if a < b {
+                println!("Product: {} * {}", a,b)
+            } else {
+                println!("Product: {} * {}",b, a )
+            }
+            output += (adjacent_nums[0].value * adjacent_nums[1].value);
+        }
+    }
+
+   output
+}
+
+#[derive(Debug, Clone)]
+struct Number {
+    coords: (i32, Vec<i32>),
+    value: i32
+}
 
 fn part_one(input: String) -> i32 {
     let mut output = Vec::new();
@@ -60,15 +122,75 @@ fn part_one(input: String) -> i32 {
     output.iter().sum()
 }
 
+
 fn has_adjacent(number: (usize, usize), symbols: &Vec<(usize, usize)>) -> bool {
-    for i in (number.0 as isize - 1)..=(number.0 as isize + 1) {
-        for j in (number.1 as isize - 1)..=(number.1 as isize + 1) {
-            if (i >= 0 && j >= 0) && symbols.contains(&(i as usize, j as usize)) {
-                return true;
-            }
+    let mut adjacent_coords: Vec<(usize, usize)> = vec![
+        (number.0, number.1 + 1),
+        (number.0 + 1, number.1 ),
+        (number.0 + 1  , number.1 + 1) ];
+
+    if number.0 != 0 && number.1 != 0 {
+        adjacent_coords.push((number.0 - 1, number.1 - 1 ));
+    }
+    if number.0 != 0 {
+        adjacent_coords.push((number.0 - 1, number.1 ));
+        adjacent_coords.push((number.0 - 1, number.1 + 1 ));
+    }
+    if number.1 != 0 {
+        adjacent_coords.push((number.0, number.1 - 1));
+        adjacent_coords.push((number.0 + 1, number.1 -1));
+    }
+
+    /*
+    (-1, -1), (-1, 0), (-1, +1)
+     (0, -1)     x,     (0, +1) don't need to check this
+     (+1, -1), (+1, 0), (+1, +1)
+     */
+
+    for a in adjacent_coords {
+        if symbols.contains(&a) {
+            return true
         }
     }
+
+
     false
+}
+
+fn find_adjacent(symbol: (i32, i32), numbers: Vec<Number>) -> Vec<Number> {
+    let mut adjacent_coords: Vec<(i32, i32)> = vec![
+        (symbol.0, symbol.1 + 1),
+        (symbol.0 + 1, symbol.1 ),
+        (symbol.0 + 1  , symbol.1 + 1) ];
+
+    if symbol.0 != 0 && symbol.1 != 0 {
+        adjacent_coords.push((symbol.0 - 1, symbol.1 - 1 ));
+    }
+    if symbol.0 != 0 {
+        adjacent_coords.push((symbol.0 - 1, symbol.1 ));
+        adjacent_coords.push((symbol.0 - 1, symbol.1 + 1 ));
+    }
+    if symbol.1 != 0 {
+        adjacent_coords.push((symbol.0, symbol.1 - 1));
+        adjacent_coords.push((symbol.0 + 1, symbol.1 -1));
+    }
+
+    /*
+    (-1, -1), (-1, 0), (-1, +1)
+     (0, -1)     x,     (0, +1) don't need to check this
+     (+1, -1), (+1, 0), (+1, +1)
+     */
+    let mut adjacent_numbers: Vec<Number> = Vec::new();
+    for n in numbers {
+        for j in n.coords.1.clone() {
+           let coord = (n.coords.0.clone(), j);
+           if adjacent_coords.contains(&coord) {
+               adjacent_numbers.push(n.clone());
+               break // break out of inner for loop, we got our number
+           }
+        }
+    }
+    adjacent_numbers
 }
 
 #[derive(Debug)]
